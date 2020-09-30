@@ -19,13 +19,19 @@ beforeAll(async () => {
   pageCode = await fs.readFile(getFixturePath('page', 'html'), 'utf-8');
 });
 
-test('download successful', async () => {
-  const scope = nock('https://hexlet.io')
-    .get('/courses')
-    .reply(200, {
-      data: pageCode.trim(),
+describe('test', () => {
+  test('mock test', async () => {
+    const scope = nock('https://hexlet.io')
+      .get('/courses')
+      .reply(200, {
+        data: pageCode.trim(),
+      });
+    expect(scope.isDone()).toBe(false);
+  });
+
+  test('same content', () => {
+    return loadPage('https://hexlet.io/courses', '/var/tmp').then((response) => {
+      expect(response.data).toEqual(pageCode.trim());
     });
-  return loadPage('https://hexlet.io/courses', '~/work/tmp').then(data => {
-    expect(data).toBe();
   });
 });
