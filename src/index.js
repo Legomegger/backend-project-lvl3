@@ -1,9 +1,20 @@
 import axios from 'axios';
 import fs from 'fs/promises';
+import path from 'path';
 
+const urlToFileName = (url) => {
+  const rule = /\/\/(.*)/;
+  const arrayOfWords = url.match(rule)[0].split('/')
+    .filter((word) => word)
+    .flatMap((word) => word.split('.'));
+  return arrayOfWords.join('-').concat('.html');
+};
 export default async (url, savePath) => {
-  const pageContent = axios.get(url).then((response) => response.data);
-  fs.writeFile(savePath, pageContent.then(e => e.data));
-  fs.readFile(savePath, 'utf-8');
-  console.log(res)
+  const outputFilename = urlToFileName(url);
+  return axios.get(url).then((content) => {
+    fs.writeFile(path.join(savePath, outputFilename), content.data.data, (err) => {
+      if (err) throw err;
+      console.log('success')
+    });
+  });
 };
