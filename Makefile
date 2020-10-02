@@ -5,7 +5,7 @@ lint:
 	npx eslint .
 
 run:
-	bin/pageloader.js
+	bin/loadpage.js
 
 test:
 	npm test

@@ -6,8 +6,13 @@
   "engines": {
     "node": ">=14"
   },
+  "bin": {
+    "loadpage": "bin/loadpage.js"
+  },
   "scripts": {
-    "test": "npx -n --experimental-vm-modules jest"
+    "test": "npx -n --experimental-vm-modules jest",
+    "testw": "npx -n --experimental-vm-modules jest --watch",
+    "eslint": "eslint"
   },
   "repository": {
     "type": "git",
@@ -27,8 +32,12 @@
   "dependencies": {
     "@jest/globals": "^26.4.2",
     "axios": "^0.20.0",
-    "commander": "^6.1.0"
+    "commander": "^6.1.0",
+    "lodash": "^4.17.20"
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "eslint": "^7.10.0",
     "eslint-config-airbnb-base": "^14.2.0",

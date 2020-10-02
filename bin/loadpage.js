@@ -11,7 +11,6 @@ program
   .option('-o, --output [path]', 'path to save page', process.cwd())
   .arguments('<url>')
   .action((url) => {
-    console.log(main(url, program.output));
+    main(url, program.output);
   })
   .parse(process.argv);
-

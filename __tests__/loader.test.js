@@ -24,22 +24,16 @@ beforeAll(async () => {
   testFilePath = path.join(os.tmpdir(), 'hexlet-io-courses.html');
   scope = nock('https://hexlet.io')
     .get('/courses')
-    .reply(200, {
-      data: pageCode.trim(),
-    });
+    .reply(200, pageCode.trim());
 });
 
 beforeEach(async () => {
-  await fs.unlink('development.log').catch(_.noop);
+  await fs.unlink(testFilePath).catch(_.noop);
 });
 
 describe('test', () => {
-  test('same content', () => {
-    return loadPage('https://hexlet.io/courses', path.join(os.tmpdir())).then((response) => {
-      fs.readFile(testFilePath, 'utf-8').then((data) => {
-        expect(data.trim()).toEqual(pageCode.trim());
-      });
-      expect(scope.isDone()).toBe(true);
-    });
-  });
+  test('same content', () => loadPage('https://hexlet.io/courses', os.tmpdir())
+    .then(() => fs.readFile(testFilePath, 'utf-8'))
+    .then((data) => expect(data.trim()).toEqual(pageCode.trim()))
+    .then(() => expect(scope.isDone()).toBe(true)));
 });

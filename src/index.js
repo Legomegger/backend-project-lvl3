@@ -11,10 +11,6 @@ const urlToFileName = (url) => {
 };
 export default async (url, savePath) => {
   const outputFilename = urlToFileName(url);
-  return axios.get(url).then((content) => {
-    fs.writeFile(path.join(savePath, outputFilename), content.data.data, (err) => {
-      if (err) throw err;
-      console.log('success')
-    });
-  });
+  const resultFilename = path.join(savePath, outputFilename);
+  return axios.get(url).then((content) => fs.writeFile(resultFilename, content.data));
 };
