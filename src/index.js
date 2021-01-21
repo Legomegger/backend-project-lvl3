@@ -2,6 +2,7 @@ import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';
 import cheerio from 'cheerio';
+import _ from 'lodash';
 
 const urlToFileName = (url) => {
   const rule = /\/\/(.*)/;
@@ -18,10 +19,13 @@ const urlToAssetDirectory = (url) => {
   return arrayOfWords.join('-').concat('_files');
 };
 const getImageLinksFromPage = (page) => {
+  let links = [];
   const $ = cheerio.load(page);
-  const elements = Array.from($('img[src]'));
-  const links = elements.map((element) => element.src);
-  return links;
+  const elements = $('img');
+  elements.each(function() {
+    links.push($(this).attr('src'));
+  })
+  return _.compact(links);
 };
 export default async (url, savePath) => {
   let imageLinks;
@@ -32,6 +36,8 @@ export default async (url, savePath) => {
     imageLinks = getImageLinksFromPage(content.data);
     return content;
   }).then((content) => fs.writeFile(resultPath, content.data));
+  console.log(g)
+  return request;
 
   // const request = axios.get(url).then((content) => fs.writeFile(resultFilename, content.data));
 };
