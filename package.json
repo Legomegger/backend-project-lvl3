@@ -31,7 +31,8 @@
   "homepage": "https://github.com/Legomegger/backend-project-lvl3#readme",
   "dependencies": {
     "@jest/globals": "^26.4.2",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
+    "cheerio": "^1.0.0-rc.5",
     "commander": "^6.1.0",
     "lodash": "^4.17.20"
   },
