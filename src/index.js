@@ -5,39 +5,52 @@ import cheerio from 'cheerio';
 import _ from 'lodash';
 
 const urlToFileName = (url) => {
-  const rule = /\/\/(.*)/;
-  const arrayOfWords = url.match(rule)[0].split('/')
-    .filter((word) => word)
-    .flatMap((word) => word.split('.'));
-  return arrayOfWords.join('-').concat('.html');
+  const newUrl = new URL(url);
+  const hostname = newUrl.hostname.split('.').join('-');
+  const pathname = newUrl.pathname.split('/').join('-');
+  return `${hostname}${pathname}.html`;
 };
 const urlToAssetDirectory = (url) => {
-  const rule = /\/\/(.*)/;
-  const arrayOfWords = url.match(rule)[0].split('/')
-    .filter((word) => word)
-    .flatMap((word) => word.split('.'));
-  return arrayOfWords.join('-').concat('_files');
+  const newUrl = new URL(url);
+  const hostname = newUrl.hostname.split('.').join('-');
+  const pathname = newUrl.pathname.split('/').join('-');
+  return `${hostname}${pathname}_files`;
 };
+
 const getImageLinksFromPage = (page) => {
-  let links = [];
   const $ = cheerio.load(page);
   const elements = $('img');
-  elements.each(function() {
-    links.push($(this).attr('src'));
-  })
-  return _.compact(links);
+  const lnks = elements.map((e) => $(elements[e]).attr('src'));
+  return _.compact(lnks);
 };
+
+const linkToLocalFile = (link) => {
+  const newLink = removeTrailingSlashes(link);
+  return `${newLink}`.split('/').join('-');
+};
+
+const removeTrailingSlashes = (link) => {
+  if (link[0] === '/' && link[link.length - 1] === '/') {
+    return link.slice(1, -1);
+  } if (link[0] === '/') {
+    return link.slice(1);
+  } if (link[link.length - 1 === '/']) {
+    return link.slice(0, -1);
+  }
+};
+
 export default async (url, savePath) => {
-  let imageLinks;
   const pageFilename = urlToFileName(url);
   const assetsDirectory = urlToAssetDirectory(url);
   const resultPath = path.join(savePath, pageFilename);
   const request = axios.get(url).then((content) => {
-    imageLinks = getImageLinksFromPage(content.data);
-    return content;
-  }).then((content) => fs.writeFile(resultPath, content.data));
-  console.log(g)
+    fs.writeFile(resultPath, content.data);
+    const imagesLinks = getImageLinksFromPage(content.data);
+    const assetDirectory = urlToAssetDirectory(url);
+    const localFilenames = imagesLinks.map((link) => linkToLocalFile(link));
+    console.log(imagesLinks)
+    console.log(localFilenames)
+    localFilenames.forEach((e) => console.log(`!!! ${assetDirectory}/${e}`))
+  });
   return request;
-
-  // const request = axios.get(url).then((content) => fs.writeFile(resultFilename, content.data));
 };
