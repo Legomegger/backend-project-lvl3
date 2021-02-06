@@ -4,16 +4,13 @@ import {
 import fs from 'fs/promises';
 import path from 'path';
 import nock from 'nock';
-import os from 'os';
-import _ from 'lodash';
+import os from 'os'; import _ from 'lodash';
 import loadPage from '../src/index.js';
-
 
 nock.disableNetConnect();
 
 let pageCode;
-let firstTestScope;
-let secondTestScope;
+let testScope;
 let testFilePath;
 let assetFilePath;
 let imageData;
@@ -25,15 +22,11 @@ const getFixturePath = (filename, extension) => {
 
 beforeAll(async () => {
   pageCode = await fs.readFile(getFixturePath('page', 'html'), 'utf-8');
-  imageData = await fs.readFile(getFixturePath('hexlet-io-assets-professions-nodejs', 'png'), 'utf-8');
   testFilePath = path.join(os.tmpdir(), 'hexlet-io-courses.html');
   assetFilePath = path.join(os.tmpdir(), 'hexlet-io-courses_files', 'hexlet-io-assets-professions-nodejs.png');
-  firstTestScope = nock('https://hexlet.io')
+  testScope = nock('https://hexlet.io')
     .get('/courses')
     .reply(200, pageCode.trim());
-  secondTestScope = nock('https://hexlet.io')
-    .get('/image/1')
-    .reply(200, imageData.trim());
 });
 
 beforeEach(async () => {
@@ -44,11 +37,5 @@ describe('basic tests', () => {
   test('simple page download', () => loadPage('https://hexlet.io/courses', os.tmpdir())
     .then(() => fs.readFile(testFilePath, 'utf-8'))
     .then((data) => expect(data.trim()).toEqual(pageCode.trim()))
-    .then(() => expect(firstTestScope.isDone()).toBe(true)));
-
-  test('should download img', () => loadPage('https://hexlet.io/image/1', os.tmpdir())
-    .then(() => fs.readFile(assetFilePath, 'utf-8'))
-    .then((data) => expect(data.trim()).toEqual(imageData.trim()))
-    .then(() => expect(secondTestScope.isDone()).toBe(true)));
-
+    .then(() => expect(testScope.isDone()).toBe(true)));
 });

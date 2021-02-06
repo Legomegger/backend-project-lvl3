@@ -24,11 +24,6 @@ const getImageLinksFromPage = (page) => {
   return _.compact(lnks);
 };
 
-const linkToLocalFile = (link) => {
-  const newLink = removeTrailingSlashes(link);
-  return `${newLink}`.split('/').join('-');
-};
-
 const removeTrailingSlashes = (link) => {
   if (link[0] === '/' && link[link.length - 1] === '/') {
     return link.slice(1, -1);
@@ -37,20 +32,31 @@ const removeTrailingSlashes = (link) => {
   } if (link[link.length - 1 === '/']) {
     return link.slice(0, -1);
   }
+  return link;
 };
+
+const linkToLocalFile = (link) => {
+  const newLink = removeTrailingSlashes(link);
+  return `${newLink}`.split('/').join('-');
+};
+
+const downloadImageTo = (url, filepath) => axios({
+  method: 'get',
+  url,
+  responseType: 'stream',
+}).then((response) => response.data.pipe(fs.createWriteStream(filepath)));
 
 export default async (url, savePath) => {
   const pageFilename = urlToFileName(url);
-  const assetsDirectory = urlToAssetDirectory(url);
   const resultPath = path.join(savePath, pageFilename);
   const request = axios.get(url).then((content) => {
-    fs.writeFile(resultPath, content.data);
     const imagesLinks = getImageLinksFromPage(content.data);
     const assetDirectory = urlToAssetDirectory(url);
     const localFilenames = imagesLinks.map((link) => linkToLocalFile(link));
-    console.log(imagesLinks)
-    console.log(localFilenames)
-    localFilenames.forEach((e) => console.log(`!!! ${assetDirectory}/${e}`))
+    imagesLinks.forEach((element, index) => {
+      downloadImageTo(element, path.join(assetDirectory, localFilenames[index]));
+    });
+    return fs.writeFile(resultPath, content.data);
   });
   return request;
 };
