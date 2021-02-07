@@ -8,12 +8,18 @@ const urlToFileName = (url) => {
   const newUrl = new URL(url);
   const hostname = newUrl.hostname.split('.').join('-');
   const pathname = newUrl.pathname.split('/').join('-');
+  if (newUrl.pathname === '/') {
+    return `${hostname}.html`;
+  }
   return `${hostname}${pathname}.html`;
 };
 const urlToAssetDirectory = (url) => {
   const newUrl = new URL(url);
   const hostname = newUrl.hostname.split('.').join('-');
   const pathname = newUrl.pathname.split('/').join('-');
+  if (newUrl.pathname === '/') {
+    return `${hostname}_files`;
+  }
   return `${hostname}${pathname}_files`;
 };
 
@@ -40,23 +46,23 @@ const linkToLocalFile = (link) => {
   return `${newLink}`.split('/').join('-');
 };
 
-const downloadImageTo = (url, filepath) => axios({
+const downloadTo = (url, filepath) => axios({
   method: 'get',
   url,
   responseType: 'stream',
 }).then((response) => response.data.pipe(fs.createWriteStream(filepath)));
 
 export default async (url, savePath) => {
-  const pageFilename = urlToFileName(url);
+  const pageFilename = urlToFileName(removeTrailingSlashes(url));
   const resultPath = path.join(savePath, pageFilename);
-  const request = axios.get(url).then((content) => {
+  const promise = axios.get(url).then((content) => {
     const imagesLinks = getImageLinksFromPage(content.data);
     const assetDirectory = urlToAssetDirectory(url);
+    fs.mkdir(assetDirectory)
     const localFilenames = imagesLinks.map((link) => linkToLocalFile(link));
-    imagesLinks.forEach((element, index) => {
-      downloadImageTo(element, path.join(assetDirectory, localFilenames[index]));
-    });
+    const promises = imagesLinks.map((link, index) => downloadTo(link, `${assetDirectory}/${localFilenames[index]}`));
+    Promise.all(promises);
     return fs.writeFile(resultPath, content.data);
   });
-  return request;
+  return promise;
 };
