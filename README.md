@@ -2,3 +2,4 @@
 [![Actions Status](https://github.com/Legomegger/backend-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/Legomegger/backend-project-lvl3/actions)
 
 - Step 1 Asciinema: https://asciinema.org/a/douSfIuY6UrlQPTm0TceJpEmA
+- Step 2 Asciinema: https://asciinema.org/a/ZVJZNopAR2MUGC9kSqXPFz9rn
