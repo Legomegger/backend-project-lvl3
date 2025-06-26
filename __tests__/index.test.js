@@ -53,7 +53,6 @@ describe('working with simple contents', () => {
   test('should download image', async () => {
     await loader(url, projectTestDir);
     const imagePath = `${projectTestDir}/${imgDirName}/kz-hexlet-io-assets-professions-nodejs.png`;
-    const files = await fs.readdir(path.join(projectTestDir, imgDirName));
     await expect(fs.access(imagePath)).resolves.not.toThrow();
   });
 })
