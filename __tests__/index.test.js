@@ -7,33 +7,40 @@ import path from 'path';
 
 nock.disableNetConnect();
 
-const baseUrl = 'https://kz.hexlet.io';
+const baseUrl = 'https://ru.hexlet.io';
 const page = '/courses';
-const url = `${baseUrl}${page}`;
+const url = (new URL(page, baseUrl)).href
 
 describe('working with simple contents', () => {
   let beforeFixtureData;
   let afterFixtureData;
   let projectTestDir;
-  const fileName = 'kz-hexlet-io-courses.html';
-  const imgDirName = 'kz-hexlet-io-courses_files';
+  const fileName = 'ru-hexlet-io-courses.html';
+  const imgDirName = 'ru-hexlet-io-courses_files';
 
   beforeEach(async () => {
     projectTestDir = (await prepareTestEnvironment());
     beforeFixtureData = await prettifyHtml(await loadFixture('before.html'))
     afterFixtureData = await prettifyHtml(await loadFixture('after.html'))
-    nock(baseUrl).get(page).reply(200, beforeFixtureData);
 
+    // Изображения
     const fixtureImagePath = '/assets/professions/nodejs.png';
     const imageBuffer = (await loadFixture(fixtureImagePath, null));
-    nock(baseUrl).get(fixtureImagePath).reply(200, imageBuffer, {
-      'Content-Type': 'image/png',
-    });
+    nock('https://ru.hexlet.io')
+      .persist()
+      .get(/.*/)
+      .reply(200, (uri) => {
+        if (uri === '/courses') return beforeFixtureData;
+        if (uri.endsWith('.png')) return imageBuffer;
+        if (uri.endsWith('.css')) return '/* mock css */';
+        if (uri.endsWith('.js')) return '/* mock js */';
+        return '';
+      });
   })
 
   test('should create correct file', async () => {
     await loader(url, projectTestDir);
-    const files = await fs.readdir(os.tmpdir());
+    const files = await fs.readdir(projectTestDir);
     expect(files).toContain(fileName);
   });
 
@@ -46,13 +53,13 @@ describe('working with simple contents', () => {
 
   test('should create files dir', async () => {
     await loader(url, projectTestDir);
-    const files = await fs.readdir(os.tmpdir());
+    const files = await fs.readdir(projectTestDir);
     expect(files).toContain(imgDirName);
   });
 
   test('should download image', async () => {
     await loader(url, projectTestDir);
-    const imagePath = `${projectTestDir}/${imgDirName}/kz-hexlet-io-assets-professions-nodejs.png`;
+    const imagePath = `${projectTestDir}/${imgDirName}/ru-hexlet-io-assets-professions-nodejs.png`;
     await expect(fs.access(imagePath)).resolves.not.toThrow();
   });
 })

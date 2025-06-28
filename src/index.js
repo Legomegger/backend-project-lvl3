@@ -4,80 +4,140 @@ import path from "path";
 import * as cheerio from 'cheerio';
 import { createWriteStream } from 'fs';
 
-
-const getHtml = (url) => {
-  return axios.get(url).then(response => response.data);
-}
-const getAssetsFolderName = (url) => {
-  const transformedHostname = new URL(url).hostname.replaceAll('.', '-');
-  const transformedPathname = new URL(url).pathname.replaceAll('/', '-');
-  return `${transformedHostname}${transformedPathname}_files`;
+const downloadPage = (url) => {
+  return axios.get(url).then((response) => response.data)
 }
 
-const getHtmlFileName = (url) => {
-  const transformedHostname = new URL(url).hostname.replaceAll('.', '-');
-  const transformedPathname = new URL(url).pathname.replaceAll('/', '-');
-  return `${transformedHostname}${transformedPathname}.html`;
+const isLocalAsset = (src, url) => {
+  if (!src) return;
+
+  const hostname = new URL(url).hostname
+  const fullUrl = new URL(src, url).href;
+  return fullUrl.includes(hostname);
 }
 
-const toFilename = (src, url) => {
-  const absUrl = new URL(src, url);
-  const clean = absUrl.hostname.replaceAll('.', '-') + absUrl.pathname.replaceAll('/', '-');
-  return clean;
+const buildFullUrl = (src, url) => {
+  return new URL(src, url).href
 }
-
-const extractAssets = (html, url) => {
-  const $ = cheerio.load(html);
-  const assets = [];
-  $('[src]').each((_, el) => {
-    const src = $(el).attr('src');
-    const absUrl = new URL(src, url).href;
-    const filename = toFilename(src, url);
-    assets.push({ src, absUrl, filename });
-  });
-
-  return { $, assets };
-}
-
-const downloadAssets = (assets, outputDir, folderName) => {
-  const assetsDir = path.join(outputDir, folderName);
-  return fs.mkdir(assetsDir, {recursive: true}).then(() => {
-    return Promise.all(
-      assets.map(({absUrl, filename}) => {
-        const filepath = path.join(assetsDir, filename);
-        return axios({ url: absUrl, responseType: 'stream' }).then(res => new Promise((resolve, reject) => {
-          const stream = createWriteStream(filepath);
-          res.data.pipe(stream);
-          stream.on('finish', resolve);
-          stream.on('error', reject);
-        }));
-      })
-    )
-  })
-
-}
-
-const updateHtmlLinks = ($, assets, folderName) => {
-  assets.forEach(({src, filename}) => {
-    $(`[src="${src}"]`).attr('src', `${folderName}/${filename}`);
-  })
-  return $.html();
-}
-
-const saveHtml = (updatedHtml, outputDir, url) => {
-  const filepath = path.join(outputDir, getHtmlFileName(url))
-  return fs.writeFile(filepath, updatedHtml);
-}
-
-export default (url, outputDir) => {
-  const folderName = getAssetsFolderName(url);
-
-  return getHtml(url)
-    .then((html) => {
-      const { $, assets } = extractAssets(html, url);
-      return downloadAssets(assets, outputDir, folderName).then(() =>
-        updateHtmlLinks($, assets, folderName)
-      )
+const getLocalLinks = ($, url) => {
+  let result = []
+  const elementsToProcess = [{type: 'link', attrib: 'href'}, {type: 'script', attrib: 'src'},{type: 'img', attrib: 'src'}] 
+  elementsToProcess.forEach(({type, attrib}) => {
+    $(type).each((_, elem) => {
+      const elemSrc = $(elem).attr(attrib);
+      if (isLocalAsset(elemSrc, url)) {
+        const fullAssetUrl = buildFullUrl(elemSrc, url);
+        result.push({
+          type,
+          attrib,
+          fullAssetUrl,
+          elemSrc,
+        })
+      }
     })
-    .then((updatedHtml) => saveHtml(updatedHtml, outputDir, url))
+  })
+  return result;
+};
+const dasherizeHostname = (str) => {
+  return replace(str, {from: '.', to: '-'})
+}
+const downloadAsset = (fullAssetUrl, filePath, dir) => {
+  return fs.mkdir(dir, { recursive: true }).then(() => axios.get(fullAssetUrl, { responseType: 'stream' }))
+    .then((response) => {
+      const writer = createWriteStream(filePath);
+      response.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+    })
+    .catch((err) => {
+      console.error(`Ошибка при загрузке ${fullAssetUrl}:`, err.message);
+      throw err;
+    });
+};
+const normalizeLinkSrc = (src) => {
+  if (src.startsWith('/') && src.includes('.')) {
+    return src;
+  } else if (src.startsWith('/')) {
+    return `${src}.html`
+  } else if (src.startsWith('http')) {
+    const urlObject = new URL(src)
+    return urlObject.pathname
+  }
+      src.includes('.') ? src : `${src}.html`
+}
+const downloadAssets = (assetsData, assetsDirPath) => {
+  return Promise.all(
+    assetsData.map((assetData) => {
+      const { fullAssetUrl, elemSrc } = assetData
+      const transformedHostname = dasherizeHostname(new URL(fullAssetUrl).hostname)
+      const normalizedLinkSrc = normalizeLinkSrc(elemSrc)
+      const fileName = replace(normalizedLinkSrc, {from: '/', to: '-'})
+      const newLink = `${transformedHostname}${fileName}`
+      const filePath = `${assetsDirPath}/${newLink}`
+      return downloadAsset(fullAssetUrl, filePath, assetsDirPath).then(() => newLink)
+    })
+  ).then((newLinks) => {
+    return newLinks;
+  })
+};
+const extractLocalAssets = (html, url) => {
+  const $ = cheerio.load(html);
+  const linksData = getLocalLinks($, url)
+  return [linksData, $];
+};
+
+const replace = (str, {from, to}) => {
+  return `${str.replaceAll(from, to)}`
+}
+
+const dasherizeUrl = (url) => {
+  const urlObject = new URL(url)
+  const transformedHostname = replace(urlObject.hostname, {from: '.', to: '-'})
+  const transformedPathname = replace(urlObject.pathname, {from: '/', to: '-'})
+  if (transformedPathname.endsWith('-')) {
+    return transformedHostname + transformedPathname.slice(0, -1);
+  }
+  return transformedHostname + transformedPathname;
+} 
+
+const getAssetsDirName = (outputDirPath, url) => {
+  return path.join(outputDirPath, `${dasherizeUrl(url)}_files`)
+}
+
+const updateHtmlLinks = (newLinks, assetsData, $html) => {
+  newLinks.forEach((link, index) => {
+    const {type, attrib, elemSrc} = assetsData[index];
+    $html(`${type}[${attrib}="${elemSrc}"]`).attr(attrib, link)
+  });
+  return $html;
+}
+
+export default (url, outputDirPath) => {
+  const assetsDirPath = getAssetsDirName(outputDirPath, url);
+
+  let assetsData;
+  let $html;
+
+  return downloadPage(url)
+    .then((html) => {
+      [assetsData, $html] = extractLocalAssets(html, url)
+    })
+    .then(() => {
+      return downloadAssets(assetsData, assetsDirPath)
+    })
+    .then((newLinks) => {
+      const pathsToLocalAssets = newLinks.map((link) => {
+        return `${dasherizeUrl(url)}_files/${link}`
+      })
+      return updateHtmlLinks(pathsToLocalAssets, assetsData, $html)
+    })
+    .then(($newHtml) => {
+      const htmlToWrite = $newHtml.html();
+      const resultFilename = `${dasherizeUrl(url)}.html`;
+      const savePath = path.join(outputDirPath, resultFilename)
+      return fs.writeFile(savePath, htmlToWrite)
+    })
 }

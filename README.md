@@ -3,3 +3,4 @@
 
 Step 1: Asciinema https://asciinema.org/a/JMjTZZbeB4WvlJdtiveSo7tHk
 Step 2: Asciinema https://asciinema.org/a/A14mxyEX0PPjC3ngTvQoCsHNU
+Step 3: Asciinema https://asciinema.org/a/1qhSgf4pVVIB7rdN3H551yz2M
