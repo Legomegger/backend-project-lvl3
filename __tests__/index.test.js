@@ -27,6 +27,10 @@ describe('working with simple contents', () => {
     const fixtureImagePath = '/assets/professions/nodejs.png';
     const imageBuffer = (await loadFixture(fixtureImagePath, null));
     nock('https://ru.hexlet.io')
+      .get('/servererror')
+      .reply(500)
+
+    nock('https://ru.hexlet.io')
       .persist()
       .get(/.*/)
       .reply(200, (uri) => {
@@ -61,5 +65,36 @@ describe('working with simple contents', () => {
     await loader(url, projectTestDir);
     const imagePath = `${projectTestDir}/${imgDirName}/ru-hexlet-io-assets-professions-nodejs.png`;
     await expect(fs.access(imagePath)).resolves.not.toThrow();
+  });
+
+  test('should throw error when fetching 500 status', async () => {
+    const serverErrorUrl = 'https://ru.hexlet.io/servererror';
+    expect.assertions(1)
+    try {
+      await loader(serverErrorUrl, projectTestDir)
+    } catch (error) {
+      expect(error.message).toMatch('500')
+    }
+  });
+
+  test('should throw error when fetching nonexisting site', async () => {
+    const nonexistingUrl = 'https://nonexisting-site-hexlet.io';
+    nock(nonexistingUrl).get(/.*/).reply(500)
+    expect.assertions(1)
+    try {
+      await loader(nonexistingUrl, projectTestDir)
+    } catch (error) {
+      expect(error.message).toMatch('500')
+    }
+  });
+
+  test('should throw error when trying to save in nonexisting dir', async () => {
+    const nonexistingDir = '/qwe/asd'
+    expect.assertions(1)
+    try {
+      await loader(url, nonexistingDir)
+    } catch (error) {
+      expect(error.message).toMatch('ENOENT')
+    }
   });
 })

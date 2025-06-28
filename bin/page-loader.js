@@ -12,4 +12,10 @@ program
 const { args } = program;
 const options = program.opts();
 const { output } = options;
-loader(args[0], output)
+loader(args[0], output).then(() => {
+  console.log("Success! Program exit");
+  process.exit(0)
+}).catch((err) => {
+  console.error("Something gone wrong:", err)
+  process.exit(1)
+})
