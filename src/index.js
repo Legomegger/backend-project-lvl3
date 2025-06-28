@@ -1,11 +1,22 @@
 import axios from "axios"
+import debug from 'debug';
 import * as fs from 'fs/promises';
 import path from "path";
 import * as cheerio from 'cheerio';
 import { createWriteStream } from 'fs';
 
+// Создаем логгеры для разных частей приложения
+const debugMain = debug('page-loader:main');
+const debugDownload = debug('page-loader:download');
+const debugAssets = debug('page-loader:assets');
+const debugFiles = debug('page-loader:files');
+
 const downloadPage = (url) => {
-  return axios.get(url).then((response) => response.data)
+  debugDownload('Загрузка страницы: %s', url);
+  return axios.get(url).then((response) => {
+    debugDownload('Страница загружена, размер: %d байт', response.data.length);
+    return response.data;
+  });
 }
 
 const isLocalAsset = (src, url) => {
@@ -13,15 +24,20 @@ const isLocalAsset = (src, url) => {
 
   const hostname = new URL(url).hostname
   const fullUrl = new URL(src, url).href;
-  return fullUrl.includes(hostname);
+  const isLocal = fullUrl.includes(hostname);
+  debugAssets('Проверка ресурса %s: %s', src, isLocal ? 'локальный' : 'внешний');
+  return isLocal;
 }
 
 const buildFullUrl = (src, url) => {
   return new URL(src, url).href
 }
+
 const getLocalLinks = ($, url) => {
   let result = []
   const elementsToProcess = [{type: 'link', attrib: 'href'}, {type: 'script', attrib: 'src'},{type: 'img', attrib: 'src'}] 
+  debugAssets('Поиск локальных ресурсов для типов: %o', elementsToProcess.map(e => e.type));
+  
   elementsToProcess.forEach(({type, attrib}) => {
     $(type).each((_, elem) => {
       const elemSrc = $(elem).attr(attrib);
@@ -36,27 +52,41 @@ const getLocalLinks = ($, url) => {
       }
     })
   })
+  
+  debugAssets('Найдено локальных ресурсов: %d', result.length);
   return result;
 };
+
 const dasherizeHostname = (str) => {
   return replace(str, {from: '.', to: '-'})
 }
+
 const downloadAsset = (fullAssetUrl, filePath, dir) => {
-  return fs.mkdir(dir, { recursive: true }).then(() => axios.get(fullAssetUrl, { responseType: 'stream' }))
+  debugDownload('Загрузка ресурса: %s -> %s', fullAssetUrl, filePath);
+  
+  return fs.mkdir(dir, { recursive: true }).then(() => {
+    debugFiles('Создана директория: %s', dir);
+    return axios.get(fullAssetUrl, { responseType: 'stream' });
+  })
     .then((response) => {
       const writer = createWriteStream(filePath);
       response.data.pipe(writer);
 
       return new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
+        writer.on('finish', () => {
+          debugDownload('Ресурс загружен: %s', filePath);
+          resolve();
+        });
         writer.on('error', reject);
       });
     })
     .catch((err) => {
+      debugDownload('Ошибка при загрузке %s: %s', fullAssetUrl, err.message);
       console.error(`Ошибка при загрузке ${fullAssetUrl}:`, err.message);
       throw err;
     });
 };
+
 const normalizeLinkSrc = (src) => {
   if (src.startsWith('/') && src.includes('.')) {
     return src;
@@ -68,7 +98,10 @@ const normalizeLinkSrc = (src) => {
   }
       src.includes('.') ? src : `${src}.html`
 }
+
 const downloadAssets = (assetsData, assetsDirPath) => {
+  debugAssets('Начинаем загрузку %d ресурсов в %s', assetsData.length, assetsDirPath);
+  
   return Promise.all(
     assetsData.map((assetData) => {
       const { fullAssetUrl, elemSrc } = assetData
@@ -80,10 +113,13 @@ const downloadAssets = (assetsData, assetsDirPath) => {
       return downloadAsset(fullAssetUrl, filePath, assetsDirPath).then(() => newLink)
     })
   ).then((newLinks) => {
+    debugAssets('Все ресурсы загружены: %o', newLinks);
     return newLinks;
   })
 };
+
 const extractLocalAssets = (html, url) => {
+  debugMain('Извлечение локальных ресурсов из HTML');
   const $ = cheerio.load(html);
   const linksData = getLocalLinks($, url)
   return [linksData, $];
@@ -108,6 +144,8 @@ const getAssetsDirName = (outputDirPath, url) => {
 }
 
 const updateHtmlLinks = (newLinks, assetsData, $html) => {
+  debugMain('Обновление ссылок в HTML: %d ссылок', newLinks.length);
+  
   newLinks.forEach((link, index) => {
     const {type, attrib, elemSrc} = assetsData[index];
     $html(`${type}[${attrib}="${elemSrc}"]`).attr(attrib, link)
@@ -116,7 +154,10 @@ const updateHtmlLinks = (newLinks, assetsData, $html) => {
 }
 
 export default (url, outputDirPath) => {
+  debugMain('Начинаем загрузку страницы: %s в директорию: %s', url, outputDirPath);
+  
   const assetsDirPath = getAssetsDirName(outputDirPath, url);
+  debugMain('Директория для ресурсов: %s', assetsDirPath);
 
   let assetsData;
   let $html;
@@ -138,6 +179,11 @@ export default (url, outputDirPath) => {
       const htmlToWrite = $newHtml.html();
       const resultFilename = `${dasherizeUrl(url)}.html`;
       const savePath = path.join(outputDirPath, resultFilename)
-      return fs.writeFile(savePath, htmlToWrite)
+      
+      debugFiles('Сохранение HTML файла: %s', savePath);
+      
+      return fs.writeFile(savePath, htmlToWrite).then(() => {
+        debugMain('Загрузка завершена успешно: %s', savePath);
+      });
     })
 }

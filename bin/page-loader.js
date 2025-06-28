@@ -6,7 +6,7 @@ program
   .version('0.0.1')
   .description('Page loader utility')
   .argument('<url>')
-  .option('-o, --output <dir>', 'output dir', '/home/user/current-dir')
+  .option('-o, --output <dir>', 'output dir', './tmp')
   .parse(process.argv)
 
 const { args } = program;
