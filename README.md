@@ -6,3 +6,4 @@ Step 2: Asciinema https://asciinema.org/a/A14mxyEX0PPjC3ngTvQoCsHNU
 Step 3: Asciinema https://asciinema.org/a/1qhSgf4pVVIB7rdN3H551yz2M  
 Step 4: Asciinema https://asciinema.org/a/GUCof8JxOhc7plSjB34tQP9e7  
 Step 5: Asciinema https://asciinema.org/a/MfURi0Eo7bQfaz8vNQo7HqZYM  
+Step 6: Asciinema https://asciinema.org/a/KrSqIcGUfL2DaHGAvL4MA5nPy

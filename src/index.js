@@ -4,6 +4,7 @@ import * as fs from 'fs/promises';
 import path from "path";
 import * as cheerio from 'cheerio';
 import { createWriteStream } from 'fs';
+import Listr from 'listr';
 
 // Создаем логгеры для разных частей приложения
 const debugMain = debug('page-loader:main');
@@ -103,19 +104,26 @@ const normalizeLinkSrc = (src) => {
 const downloadAssets = (assetsData, assetsDirPath) => {
   debugAssets('Начинаем загрузку %d ресурсов в %s', assetsData.length, assetsDirPath);
 
-  return Promise.all(
-    assetsData.map((assetData) => {
-      const { fullAssetUrl, elemSrc } = assetData
-      const transformedHostname = dasherizeHostname(new URL(fullAssetUrl).hostname)
-      const normalizedLinkSrc = normalizeLinkSrc(elemSrc)
-      const fileName = replace(normalizedLinkSrc, { from: '/', to: '-' })
-      const newLink = `${transformedHostname}${fileName}`
-      const filePath = `${assetsDirPath}/${newLink}`
-      return downloadAsset(fullAssetUrl, filePath, assetsDirPath).then(() => newLink)
-    })
-  ).then((newLinks) => {
-    debugAssets('Все ресурсы загружены: %o', newLinks);
-    return newLinks;
+  const assetsInfo = assetsData.map((assetData) => {
+    const { fullAssetUrl, elemSrc } = assetData
+    const transformedHostname = dasherizeHostname(new URL(fullAssetUrl).hostname)
+    const normalizedLinkSrc = normalizeLinkSrc(elemSrc)
+    const fileName = replace(normalizedLinkSrc, { from: '/', to: '-' })
+    const newLink = `${transformedHostname}${fileName}`
+    const filePath = `${assetsDirPath}/${newLink}`
+    return { fullAssetUrl, filePath, newLink }
+  })
+
+  const tasks = assetsInfo.map((info) => ({
+    title: `Loading: ${info.filePath}`,
+    task: () => downloadAsset(info.fullAssetUrl, info.filePath, assetsDirPath)
+  }));
+  const listr = new Listr(tasks, { concurrent: true });
+
+  return listr.run().then(() => {
+    return assetsInfo.map((info) => info.newLink);
+  }).catch((err) => {
+    throw err;
   })
 };
 
