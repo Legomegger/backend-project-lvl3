@@ -67,10 +67,7 @@ const dasherizeHostname = (str) => {
 const downloadAsset = (fullAssetUrl, filePath, dir) => {
   debugDownload('Загрузка ресурса: %s -> %s', fullAssetUrl, filePath);
 
-  return fs.mkdir(dir, { recursive: true }).then(() => {
-    debugFiles('Создана директория: %s', dir);
-    return axios.get(fullAssetUrl, { responseType: 'stream' });
-  })
+  return axios.get(fullAssetUrl, { responseType: 'stream' })
     .then((response) => {
       const writer = createWriteStream(filePath);
       response.data.pipe(writer);
@@ -174,6 +171,13 @@ export default (url, outputDirPath) => {
   return downloadPage(url)
     .then((html) => {
       [assetsData, $html] = extractLocalAssets(html, url)
+    })
+    .then(() => {
+      return fs.mkdir(assetsDirPath).then(() => {
+        debugFiles('Создана директория: %s', assetsDirPath);
+      }).catch((err) => {
+        throw err;
+      })
     })
     .then(() => {
       return downloadAssets(assetsData, assetsDirPath)

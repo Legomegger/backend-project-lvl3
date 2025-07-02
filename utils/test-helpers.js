@@ -8,12 +8,16 @@ export const getFixturePath = filename => path.join(__dirname, '..', '__fixtures
 export const __filename = fileURLToPath(import.meta.url)
 export const __dirname = path.dirname(__filename)
 const cleanTestEnvironment = async (testDirPath) => {
-  return (await fs.rm(testDirPath, { recursive: true }).catch(() => {}))
+  try {
+    (await fs.rm(testDirPath, { recursive: true, force: true }))
+  } catch (err) {
+    console.error("Couldnt remove ", err)
+  }
 };
 export const prepareTestEnvironment = async () => {
   const testDirPath = path.join(os.tmpdir(), '/project-3');
   await cleanTestEnvironment(testDirPath);
-  await fs.mkdir(testDirPath);
+  await fs.mkdir(testDirPath).catch(() => {});
   return testDirPath;
 };
 
