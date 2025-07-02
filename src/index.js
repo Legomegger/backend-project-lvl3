@@ -159,7 +159,7 @@ const updateHtmlLinks = (newLinks, assetsData, $html) => {
   return $html;
 }
 
-export default (url, outputDirPath) => {
+export default (url, outputDirPath = './tmp/') => {
   debugMain('Начинаем загрузку страницы: %s в директорию: %s', url, outputDirPath);
 
   const assetsDirPath = getAssetsDirName(outputDirPath, url);
@@ -168,7 +168,8 @@ export default (url, outputDirPath) => {
   let assetsData;
   let $html;
 
-  return downloadPage(url)
+  return fs.mkdir(outputDirPath)
+    .then(() => downloadPage(url))
     .then((html) => {
       [assetsData, $html] = extractLocalAssets(html, url)
     })
@@ -200,5 +201,7 @@ export default (url, outputDirPath) => {
       }).catch((err) => {
         throw err;
       })
+    }).catch((err) => {
+      throw err;
     })
 }

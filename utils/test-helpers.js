@@ -17,7 +17,7 @@ const cleanTestEnvironment = async (testDirPath) => {
 export const prepareTestEnvironment = async () => {
   const testDirPath = path.join(os.tmpdir(), '/project-3');
   await cleanTestEnvironment(testDirPath);
-  await fs.mkdir(testDirPath).catch(() => {});
+  // await fs.mkdir(testDirPath).catch(() => {});
   return testDirPath;
 };
 
