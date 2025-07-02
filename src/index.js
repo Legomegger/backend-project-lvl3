@@ -193,6 +193,8 @@ export default (url, outputDirPath) => {
 
       return fs.writeFile(savePath, htmlToWrite).then(() => {
         debugMain('Загрузка завершена успешно: %s', savePath);
-      });
+      }).catch((err) => {
+        throw err;
+      })
     })
 }

@@ -94,7 +94,7 @@ describe('working with simple contents', () => {
     try {
       await loader(url, nonexistingDir)
     } catch (error) {
-      expect(error.message).toMatch('ENOENT')
+      expect(error.message).toMatch('EACCES')
     }
   });
 })
