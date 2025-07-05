@@ -64,7 +64,7 @@ const dasherizeHostname = (str) => {
   return replace(str, { from: '.', to: '-' })
 }
 
-const downloadAsset = (fullAssetUrl, filePath, dir) => {
+const downloadAsset = (fullAssetUrl, filePath) => {
   debugDownload('Загрузка ресурса: %s -> %s', fullAssetUrl, filePath)
 
   return axios.get(fullAssetUrl, { responseType: 'stream' })
