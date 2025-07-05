@@ -178,11 +178,16 @@ export default (url, outputDirPath = './tmp/') => {
 
   return directoryExists(outputDirPath).then((isExist) => {
     if (!isExist) {
-      return fs.mkdir(outputDirPath)
+      console.log("not Exists outputDirPath", outputDirPath)
+      return fs.mkdir(outputDirPath).then(() => {
+        console.log("created dir outputDirPath")
+      })
         .catch((err) => {
+          console.log("Couldnt create dir outputDirPath", err)
           throw new Error(`Couldnt create dir ${outputDirPath} - ${err.message}`);
         })
     }
+    console.log("Exists outputDirPath", outputDirPath)
   })
     .then(() => downloadPage(url))
     .then((html) => {
@@ -191,12 +196,17 @@ export default (url, outputDirPath = './tmp/') => {
     .then(() => {
       return directoryExists(assetsDirPath).then((isExist) => {
         if (!isExist) {
+          console.log("not Exists assetsDirPath", assetsDirPath)
           debugFiles('Создана директория: %s', assetsDirPath);
-          return fs.mkdir(assetsDirPath)
-            .catch((err) => {
-            throw new Error(`Couldnt create dir ${assetsDirPath} - ${err.message}`);
+          return fs.mkdir(assetsDirPath).then(() => {
+          console.log("created dir assetsDirPath")
           })
+            .catch((err) => {
+          console.log("Couldnt create dir assetsDirPath", err)
+              throw new Error(`Couldnt create dir ${assetsDirPath} - ${err.message}`);
+            })
         }
+        console.log("Exists assetsDirPath", assetsDirPath)
       })
     })
     .then(() => {
