@@ -27,6 +27,7 @@ const isLocalAsset = (src, url) => {
 
   const hostname = new URL(url).hostname
   const fullUrl = new URL(src, url).href;
+  console.log("IS LOCAL ASSET", fullUrl, hostname)
   const isLocal = fullUrl.includes(hostname);
   debugAssets('Проверка ресурса %s: %s', src, isLocal ? 'локальный' : 'внешний');
   return isLocal;
