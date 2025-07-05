@@ -178,7 +178,9 @@ export default (url, outputDirPath = './tmp/') => {
 
   return directoryExists(outputDirPath).then((isExist) => {
     if (!isExist) {
-      return fs.mkdir(outputDirPath)
+      return fs.mkdir(outputDirPath).catch((err) => {
+        throw err;
+      })
     }
   })
     .then(() => downloadPage(url))
@@ -189,7 +191,9 @@ export default (url, outputDirPath = './tmp/') => {
       return directoryExists(assetsDirPath).then((isExist) => {
         if (!isExist) {
           debugFiles('Создана директория: %s', assetsDirPath);
-          return fs.mkdir(assetsDirPath)
+          return fs.mkdir(assetsDirPath).catch((err) => {
+            throw err;
+          })
         }
       })
     })
