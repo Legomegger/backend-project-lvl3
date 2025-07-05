@@ -176,7 +176,7 @@ const ensureDirectoryExists = (path) => {
     });
 };
 
-export default (url, outputDirPath) => {
+export default (url, outputDirPath = process.cwd()) => {
   debugMain('Начинаем загрузку страницы: %s в директорию: %s', url, outputDirPath);
 
   const assetsDirPath = getAssetsDirName(outputDirPath, url);
