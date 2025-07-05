@@ -147,6 +147,7 @@ const dasherizeUrl = (url) => {
 }
 
 const getAssetsDirName = (outputDirPath, url) => {
+  console.log("QWE", outputDirPath, url, `${dasherizeUrl(url)}_files`)
   return path.join(outputDirPath, `${dasherizeUrl(url)}_files`)
 }
 
