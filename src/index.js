@@ -159,6 +159,14 @@ const updateHtmlLinks = (newLinks, assetsData, $html) => {
   return $html;
 }
 
+const directoryExists = (path) => {
+  return fs.access(path)
+    .then(() => true)
+    .catch(() => {
+      return false
+    })
+}
+
 export default (url, outputDirPath = './tmp/') => {
   debugMain('Начинаем загрузку страницы: %s в директорию: %s', url, outputDirPath);
 
@@ -168,16 +176,21 @@ export default (url, outputDirPath = './tmp/') => {
   let assetsData;
   let $html;
 
-  return fs.mkdir(outputDirPath)
+  return directoryExists(outputDirPath).then((isExist) => {
+    if (!isExist) {
+      return fs.mkdir(outputDirPath)
+    }
+  })
     .then(() => downloadPage(url))
     .then((html) => {
       [assetsData, $html] = extractLocalAssets(html, url)
     })
     .then(() => {
-      return fs.mkdir(assetsDirPath).then(() => {
-        debugFiles('Создана директория: %s', assetsDirPath);
-      }).catch((err) => {
-        throw err;
+      return directoryExists(assetsDirPath).then((isExist) => {
+        if (!isExist) {
+          debugFiles('Создана директория: %s', assetsDirPath);
+          return fs.mkdir(assetsDirPath)
+        }
       })
     })
     .then(() => {
