@@ -167,6 +167,13 @@ const directoryExists = (path) => {
     })
 }
 
+const ensureDirectoryExists = (path) => {
+  return fs.access(path)
+    .catch(() => {
+      throw new Error(`Директория не существует: ${path}`);
+    });
+};
+
 export default (url, outputDirPath = './tmp/') => {
   debugMain('Начинаем загрузку страницы: %s в директорию: %s', url, outputDirPath);
 
@@ -176,19 +183,21 @@ export default (url, outputDirPath = './tmp/') => {
   let assetsData;
   let $html;
 
-  return directoryExists(outputDirPath).then((isExist) => {
-    if (!isExist) {
-      console.log("not Exists outputDirPath", outputDirPath)
-      return fs.mkdir(outputDirPath).then(() => {
-        console.log("created dir outputDirPath")
-      })
-        .catch((err) => {
-          console.log("Couldnt create dir outputDirPath", err)
-          throw new Error(`Couldnt create dir ${outputDirPath} - ${err.message}`);
-        })
-    }
-    console.log("Exists outputDirPath", outputDirPath)
-  })
+  return ensureDirectoryExists(outputDirPath)
+
+  // return directoryExists(outputDirPath).then((isExist) => {
+  //   if (!isExist) {
+  //     console.log("not Exists outputDirPath", outputDirPath)
+  //     return fs.mkdir(outputDirPath).then(() => {
+  //       console.log("created dir outputDirPath")
+  //     })
+  //       .catch((err) => {
+  //         console.log("Couldnt create dir outputDirPath", err)
+  //         throw new Error(`Couldnt create dir ${outputDirPath} - ${err.message}`);
+  //       })
+  //   }
+  //   console.log("Exists outputDirPath", outputDirPath)
+  // })
     .then(() => downloadPage(url))
     .then((html) => {
       [assetsData, $html] = extractLocalAssets(html, url)
