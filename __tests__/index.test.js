@@ -1,31 +1,30 @@
-import nock from 'nock';
-import os from 'os'
-import loader from '../src/index.js';
-import * as fs from 'fs/promises';
-import { loadFixture, prepareTestEnvironment, prettifyHtml } from '../utils/test-helpers.js';
-import path from 'path';
+import nock from 'nock'
+import loader from '../src/index.js'
+import * as fs from 'fs/promises'
+import { loadFixture, prepareTestEnvironment, prettifyHtml } from '../utils/test-helpers.js'
+import path from 'path'
 
-nock.disableNetConnect();
+nock.disableNetConnect()
 
-const baseUrl = 'https://ru.hexlet.io';
-const page = '/courses';
+const baseUrl = 'https://ru.hexlet.io'
+const page = '/courses'
 const url = (new URL(page, baseUrl)).href
 
 describe('working with simple contents', () => {
-  let beforeFixtureData;
-  let afterFixtureData;
-  let projectTestDir;
-  const fileName = 'ru-hexlet-io-courses.html';
-  const imgDirName = 'ru-hexlet-io-courses_files';
+  let beforeFixtureData
+  let afterFixtureData
+  let projectTestDir
+  const fileName = 'ru-hexlet-io-courses.html'
+  const imgDirName = 'ru-hexlet-io-courses_files'
 
   beforeEach(async () => {
-    projectTestDir = (await prepareTestEnvironment());
+    projectTestDir = (await prepareTestEnvironment())
     beforeFixtureData = await prettifyHtml(await loadFixture('before.html'))
     afterFixtureData = await prettifyHtml(await loadFixture('after.html'))
 
     // Изображения
-    const fixtureImagePath = '/assets/professions/nodejs.png';
-    const imageBuffer = (await loadFixture(fixtureImagePath, null));
+    const fixtureImagePath = '/assets/professions/nodejs.png'
+    const imageBuffer = (await loadFixture(fixtureImagePath, null))
     nock('https://ru.hexlet.io')
       .get('/servererror')
       .reply(500)
@@ -34,67 +33,70 @@ describe('working with simple contents', () => {
       .persist()
       .get(/.*/)
       .reply(200, (uri) => {
-        if (uri === '/courses') return beforeFixtureData;
-        if (uri.endsWith('.png')) return imageBuffer;
-        if (uri.endsWith('.css')) return '/* mock css */';
-        if (uri.endsWith('.js')) return '/* mock js */';
-        return '';
-      });
+        if (uri === '/courses') return beforeFixtureData
+        if (uri.endsWith('.png')) return imageBuffer
+        if (uri.endsWith('.css')) return '/* mock css */'
+        if (uri.endsWith('.js')) return '/* mock js */'
+        return ''
+      })
   })
 
   test('should create correct file', async () => {
-    await loader(url, projectTestDir);
-    const files = await fs.readdir(projectTestDir);
-    expect(files).toContain(fileName);
-  });
+    await loader(url, projectTestDir)
+    const files = await fs.readdir(projectTestDir)
+    expect(files).toContain(fileName)
+  })
 
   test('should save contents from url', async () => {
-    await loader(url, projectTestDir);
+    await loader(url, projectTestDir)
     const resultFilePath = path.join(projectTestDir, fileName)
-    const tempfileContents = await prettifyHtml(await fs.readFile(resultFilePath, 'utf8'));
-    expect(tempfileContents).toEqual(afterFixtureData);
-  });
+    const tempfileContents = await prettifyHtml(await fs.readFile(resultFilePath, 'utf8'))
+    expect(tempfileContents).toEqual(afterFixtureData)
+  })
 
   test('should create files dir', async () => {
-    await loader(url, projectTestDir);
-    const files = await fs.readdir(projectTestDir);
-    expect(files).toContain(imgDirName);
-  });
+    await loader(url, projectTestDir)
+    const files = await fs.readdir(projectTestDir)
+    expect(files).toContain(imgDirName)
+  })
 
   test('should download image', async () => {
-    await loader(url, projectTestDir);
-    const imagePath = `${projectTestDir}/${imgDirName}/ru-hexlet-io-assets-professions-nodejs.png`;
-    await expect(fs.access(imagePath)).resolves.not.toThrow();
-  });
+    await loader(url, projectTestDir)
+    const imagePath = `${projectTestDir}/${imgDirName}/ru-hexlet-io-assets-professions-nodejs.png`
+    await expect(fs.access(imagePath)).resolves.not.toThrow()
+  })
 
   test('should throw error when fetching 500 status', async () => {
-    const serverErrorUrl = 'https://ru.hexlet.io/servererror';
+    const serverErrorUrl = 'https://ru.hexlet.io/servererror'
     expect.assertions(1)
     try {
       await loader(serverErrorUrl, projectTestDir)
-    } catch (error) {
+    }
+    catch (error) {
       expect(error.message).toMatch('500')
     }
-  });
+  })
 
   test('should throw error when fetching nonexisting site', async () => {
-    const nonexistingUrl = 'https://nonexisting-site-hexlet.io';
+    const nonexistingUrl = 'https://nonexisting-site-hexlet.io'
     nock(nonexistingUrl).get(/.*/).reply(500)
     expect.assertions(1)
     try {
       await loader(nonexistingUrl, projectTestDir)
-    } catch (error) {
+    }
+    catch (error) {
       expect(error.message).toMatch('500')
     }
-  });
+  })
 
   test('should throw error when trying to save in nonexisting dir', async () => {
     const nonexistingDir = '/qwe/asd'
     expect.assertions(1)
     try {
       await loader(url, nonexistingDir)
-    } catch (error) {
+    }
+    catch (error) {
       expect(error.message).toMatch('ENOENT')
     }
-  });
+  })
 })
