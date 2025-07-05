@@ -194,8 +194,7 @@ export default (url, outputDirPath = process.cwd()) => {
       return directoryExists(assetsDirPath).then((isExist) => {
         if (!isExist) {
           debugFiles('Создана директория: %s', assetsDirPath)
-          return fs.mkdir(assetsDirPath).then(() => {
-          })
+          return fs.mkdir(assetsDirPath)
             .catch((err) => {
               throw new Error(`Couldnt create dir ${assetsDirPath} - ${err.message}`)
             })
