@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { program } from 'commander'
-import loader from '../src/index.js'
+import loader from '../index.js'
 
 program
   .version('0.0.1')
