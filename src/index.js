@@ -97,7 +97,6 @@ const normalizeLinkSrc = (src) => {
     const urlObject = new URL(src)
     return urlObject.pathname
   }
-  src.includes('.') ? src : `${src}.html`
 }
 
 const downloadAssets = (assetsData, assetsDirPath) => {
@@ -115,7 +114,7 @@ const downloadAssets = (assetsData, assetsDirPath) => {
 
   const tasks = assetsInfo.map(info => ({
     title: `Loading: ${info.filePath}`,
-    task: () => downloadAsset(info.fullAssetUrl, info.filePath, assetsDirPath),
+    task: () => downloadAsset(info.fullAssetUrl, info.filePath),
   }))
   const listr = new Listr(tasks, { concurrent: true })
 
