@@ -175,9 +175,7 @@ export default (url, outputDirPath = process.cwd()) => {
       [assetsData, $html] = extractLocalAssets(html, url)
     })
     .then(() => fs.access(assetsDirPath).catch(() => fs.mkdir(assetsDirPath)))
-    .then(() => {
-      return downloadAssets(assetsData, assetsDirPath)
-    })
+    .then(() => downloadAssets(assetsData, assetsDirPath))
     .then((newLinks) => {
       const pathsToLocalAssets = newLinks.map((link) => {
         return `${dasherizeUrl(url)}_files/${link}`
